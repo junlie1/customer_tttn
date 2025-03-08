@@ -1,5 +1,6 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import userReducer from "./slides/userSlide";
+import bookReducer from './slides/bookingSlide';
 
 import {
   persistStore,
@@ -22,6 +23,7 @@ const persistConfig = {
 }
 const rootReducer = combineReducers({
   user: userReducer,
+  book: bookReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

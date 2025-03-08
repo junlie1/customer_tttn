@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HeaderContainer, Logo, Nav, AuthButtons, UserMenu, MenuItem } from './style';
+import { HeaderContainer, Logo, Nav, AuthButtons, UserMenu, MenuItem, UserIcon } from './style';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,13 +25,22 @@ const HeaderComponent = () => {
     setMenuVisible(!menuVisible);
   };
 
+  const handleNavigateSearch = () => {
+    navigate('/search-results');
+  }
+  const handleNavigateHome = () => {
+    navigate('/');
+  }
+  const handleNavigateProfile = () => {
+    navigate('/profile')
+  }
   return (
     <HeaderContainer>
       <Nav>
-        <a href="#find-a-trip">
+        <a onClick={handleNavigateSearch} style={{cursor: 'pointer'}}>
           <span role="img" aria-label="car">🚗</span> Find a Trip
         </a>
-        <a href="#community">
+        <a onClick={handleNavigateHome} style={{cursor: 'pointer'}}>
           <span role="img" aria-label="community">🔗</span> Community
         </a>
       </Nav>
@@ -42,11 +51,12 @@ const HeaderComponent = () => {
         {user?.uid ? (
           <div style={{ position: 'relative' }}>
             <div onClick={toggleMenu} className="user-email" style={{cursor: 'pointer'}}>
-            <img src={icon_user} alt="User Icon" className="user-icon" /> {user?.email}
+              <img src={icon_user} alt="User Icon" style={{width: '30px', height: '30px'}} /> {user?.email}
             </div>
             {menuVisible && (
               <UserMenu>
                 <MenuItem onClick={handleLogout}>Đăng xuất</MenuItem>
+                <MenuItem onClick={handleNavigateProfile}>Quản lý tài khoản</MenuItem>
                 <MenuItem onClick={() => navigate('/history')}>Lịch sử đặt vé</MenuItem>
               </UserMenu>
             )}

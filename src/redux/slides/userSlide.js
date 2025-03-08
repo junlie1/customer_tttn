@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem("user")) || null, // Lấy thông tin từ localStorage nếu có
+  user: JSON.parse(localStorage.getItem("user")) || null, // Lấy thông tin từ localStorage
 };
 
 const userSlice = createSlice({
@@ -16,9 +16,15 @@ const userSlice = createSlice({
       state.user = null;
       localStorage.removeItem("user");
     },
+    updateUser: (state, action) => {
+      if(state.user) {
+        state.user = { ...state.user, ...action.payload }; // Chỉ cập nhật những thông tin thay đổi
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
+    }
   },
 });
 
-export const { setUser, clearUser } = userSlice.actions;
+export const { setUser, clearUser, updateUser } = userSlice.actions;
 
 export default userSlice.reducer;

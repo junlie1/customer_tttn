@@ -1,3 +1,4 @@
+import axios from "axios";
 import auth from "../config/firebase";
 import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup,GoogleAuthProvider, FacebookAuthProvider, fetchSignInMethodsForEmail  } from "firebase/auth";
 
@@ -146,3 +147,12 @@ export const loginByFacebook = async () => {
     }
   }
 };
+
+export const updateUserService = async (customerId, updateData) => {
+  try {
+    const response = await axios.put(`${process.env.REACT_APP_API_URL_BACKEND}/user/update/${customerId}`,updateData);
+    return response.data;
+  } catch (error) {
+    console.error('error',error);
+  }
+}
