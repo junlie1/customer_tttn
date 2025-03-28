@@ -24,6 +24,7 @@ import { loginByFacebook, loginByGoogle, loginUser } from "../../services/userSe
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/slides/userSlide";
 import MessageComponent from "../../components/MessageComponent/MessageComponent";
+import { sendResetPasswordEmail } from "../../services/userService";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -41,9 +42,11 @@ const LoginPage = () => {
   const handleLogin = async () => {
     try {
       const response = await loginUser(email, password);
+      console.log('response',response);
+      
       setError(""); 
-      if (response.user) {
-        dispatch(setUser(response.user));
+      if (response.status === 200) {
+        dispatch(setUser(response.data));
         setSuccess("Đăng nhập thành công!"); 
         setTimeout(() => {
           setSuccess("");
@@ -68,7 +71,8 @@ const LoginPage = () => {
   const handleLoginByGoogle = async () => {
     try {
       const response = await loginByGoogle();
-      console.log('response',response?.data?.displayName);
+      console.log('response',response.data);
+      
       if(response.success) {
         dispatch(setUser(response?.data));
         setSuccess("Đăng nhập thành công!"); 
@@ -89,7 +93,7 @@ const LoginPage = () => {
       console.log('response',response);
       
       if (response.success) {
-        dispatch(setUser(response.data));
+        dispatch(setUser(response?.data));
         setSuccess("Đăng nhập thành công!");
         setTimeout(() => {
           setSuccess("");
@@ -104,6 +108,22 @@ const LoginPage = () => {
       setSuccess("");
     }
   }
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Vui lòng nhập email để khôi phục mật khẩu.");
+      return;
+    }
+  
+    const result = await sendResetPasswordEmail(email);
+    if (result.success) {
+      setSuccess(result.message);
+      setError("");
+    } else {
+      setError(result.error);
+      setSuccess("");
+    }
+  };
 
   return (
     <LoginContainer>
@@ -144,7 +164,7 @@ const LoginPage = () => {
               </EyeIcon>
             </PasswordWrapper>
           </InputField>
-          <ForgotPassword>Forgot Password?</ForgotPassword>
+          <ForgotPassword onClick={handleForgotPassword}>Forgot Password?</ForgotPassword>
           <Button type="button" onClick={handleLogin}>
             Login
           </Button>

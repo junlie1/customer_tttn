@@ -17,9 +17,9 @@ const userSlice = createSlice({
       localStorage.removeItem("user");
     },
     updateUser: (state, action) => {
-      if(state.user) {
-        state.user = { ...state.user, ...action.payload }; // Chỉ cập nhật những thông tin thay đổi
-        localStorage.setItem("user", JSON.stringify(state.user));
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload }; // ✅ Cập nhật toàn bộ user
+        localStorage.setItem("user", JSON.stringify(state.user)); // ✅ Lưu vào localStorage
       }
     }
   },

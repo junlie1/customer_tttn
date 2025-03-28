@@ -1,9 +1,13 @@
 import axios from "axios";
-import auth from "../config/firebase";
-import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup,GoogleAuthProvider, FacebookAuthProvider, fetchSignInMethodsForEmail  } from "firebase/auth";
+import {auth} from "../config/firebase";
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup,GoogleAuthProvider, FacebookAuthProvider, fetchSignInMethodsForEmail, updateProfile, sendPasswordResetEmail  } from "firebase/auth";
+import { saveUserToFirestore } from "./saveUserToFirestore";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import {db} from '../config/firebase'
 
+//không lưu vào Firestore ngay sau khi đăng ký, mà sẽ chỉ lưu khi người dùng đăng nhập lần đầu tiên sau khi xác thực email.
 export const registerUser = async (userData) => {
-  const { email, password } = userData;
+  const { email, password, name } = userData;
 
   const errorMessages = {
     "auth/email-already-in-use": "Email này đã được sử dụng. Vui lòng sử dụng email khác.",
@@ -14,21 +18,29 @@ export const registerUser = async (userData) => {
   };
 
   try {
+    // Đăng ký tài khoản
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    await updateProfile(user, {displayName: name});
+
+    // Gửi email xác thực
     await sendEmailVerification(user);
 
     return {
       status: 201,
-      message: "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
-      userId: user.uid,
+      message: "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.",
+      data: {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        phone: user.phoneNumber
+      }
     };
   } catch (error) {
     console.error("Firebase Error:", error.message);
 
     const customMessage = errorMessages[error.code] || "Đã xảy ra lỗi không xác định.";
-
     throw {
       message: customMessage,
       code: error.code,
@@ -36,37 +48,53 @@ export const registerUser = async (userData) => {
   }
 };
 
+// Khi người dùng đăng nhập, nếu email đã xác thực, chúng ta sẽ lưu vào Firestore.
 export const loginUser = async (email, password) => {
-    const errorMessages = {
-        "auth/user-not-found": "Tài khoản không tồn tại. Vui lòng kiểm tra lại email.",
-        "auth/wrong-password": "Mật khẩu không chính xác. Vui lòng thử lại.",
-        "auth/too-many-requests": "Đã có quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.",
-        "auth/invalid-email": "Định dạng email không hợp lệ. Vui lòng kiểm tra lại.",
-        "auth/invalid-credential": "Sai tài khoản hoặc mật khẩu",
-      };
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
-      return {
-        status: 200,
-        message: "Đăng nhập thành công!",
-        user: {
-          uid: user.uid,
-          email: user.email,
-          emailVerified: user.emailVerified,
-        },
-      };
-    } catch (error) {
-      console.error("Firebase Login Error:", error.message);
-  
-      const customMessage = errorMessages[error.code] || "Đã xảy ra lỗi không xác định.";
+  const errorMessages = {
+    "auth/user-not-found": "Tài khoản không tồn tại. Vui lòng kiểm tra lại email.",
+    "auth/wrong-password": "Mật khẩu không chính xác. Vui lòng thử lại.",
+    "auth/too-many-requests": "Đã có quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.",
+    "auth/invalid-email": "Định dạng email không hợp lệ. Vui lòng kiểm tra lại.",
+    "auth/invalid-credential": "Sai tài khoản hoặc mật khẩu",
+  };
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Kiểm tra nếu email đã xác thực
+    if (!user.emailVerified) {
+      await auth.signOut(); // Đăng xuất nếu email chưa xác thực
       throw {
-        message: customMessage,
-        code: error.code,
+        message: "Email chưa được xác thực. Vui lòng kiểm tra email và xác thực trước khi đăng nhập.",
+        code: "auth/email-not-verified",
       };
     }
-  };
+
+    // Nếu email đã xác thực, lưu vào Firestore (chỉ khi đăng nhập lần đầu)
+    await saveUserToFirestore(user);
+
+    return {
+      status: 200,
+      message: "Đăng nhập thành công!",
+      data: {
+        uid: user.uid,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        name: user.displayName,
+        phone: user.phoneNumber
+      },
+    };
+  } catch (error) {
+    console.error("Firebase Login Error:", error.message);
+
+    const customMessage = errorMessages[error.code] || "Đã xảy ra lỗi không xác định.";
+    throw {
+      message: customMessage,
+      code: error.code,
+    };
+  }
+};
 
 
 export const loginByGoogle = async () => {
@@ -74,18 +102,23 @@ export const loginByGoogle = async () => {
   provider.setCustomParameters({
     prompt: "select_account",
   });
+
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    const userInfo = {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-    };
+    console.log('user',user);
+    
+    // Lưu thông tin vào Firestore
+    await saveUserToFirestore(user);
+
     return {  
       success: true,
-      data: userInfo  ,
+      data: {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        phone: user.phoneNumber
+      },
     };
   } catch (error) {
     console.error("Error during Google Login:", error);
@@ -110,10 +143,10 @@ export const loginByFacebook = async () => {
     const userInfo = {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
+      name: user.displayName,
+      phone: user.phoneNumber
     };
-
+    await saveUserToFirestore(user);
     return {
       success: true,
       data: userInfo,
@@ -150,9 +183,58 @@ export const loginByFacebook = async () => {
 
 export const updateUserService = async (customerId, updateData) => {
   try {
-    const response = await axios.put(`${process.env.REACT_APP_API_URL_BACKEND}/user/update/${customerId}`,updateData);
+    const response = await axios.patch(`${process.env.REACT_APP_API_URL_BACKEND}/user/update/${customerId}`,updateData);
     return response.data;
   } catch (error) {
     console.error('error',error);
   }
 }
+
+export const getUserById = async (customerId) => {
+  try {
+    const response = await axios.get(`${process.env.REACT_APP_API_URL_BACKEND}/user/${customerId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error", error);
+  }
+}
+
+export const sendResetPasswordEmail = async (email) => {
+  const errorMessages = {
+    "auth/invalid-email": "Email không hợp lệ.",
+    "auth/network-request-failed": "Mạng không ổn định. Vui lòng thử lại.",
+  };
+
+  try {
+    // Bước 1: Kiểm tra email có tồn tại trong Firebase Authentication không
+    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+    const existsInAuth = signInMethods && signInMethods.length > 0;
+
+    // Bước 2: Kiểm tra email có tồn tại trong Firestore (bộ sưu tập 'users')
+    const userQuery = query(collection(db, "users"), where("email", "==", email));
+    const querySnapshot = await getDocs(userQuery);
+    const existsInFirestore = !querySnapshot.empty;
+
+    // Nếu không tồn tại ở cả 2 nơi → trả về lỗi
+    if (!existsInAuth && !existsInFirestore) {
+      return {
+        success: false,
+        error: "Không tìm thấy tài khoản với email này.",
+      };
+    }
+
+    // Nếu có tồn tại → gửi email reset
+    await sendPasswordResetEmail(auth, email);
+    return {
+      success: true,
+      message: "Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.",
+    };
+  } catch (error) {
+    console.error("Reset Password Error:", error.message);
+    const customMessage = errorMessages[error.code] || "Đã xảy ra lỗi khi gửi email khôi phục.";
+    return {
+      success: false,
+      error: customMessage,
+    };
+  }
+};

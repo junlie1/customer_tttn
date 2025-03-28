@@ -39,7 +39,7 @@ const RegisterPage = () => {
     }
   
     try {
-      const response = await registerUser({ email, password });
+      const response = await registerUser({ email, password, name });
   
       if (response.status === 201) {
         setSuccess(response.message);

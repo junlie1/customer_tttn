@@ -25,12 +25,11 @@ const BookingForm = () => {
     const [showPersonDropdown, setShowPersonDropdown] = useState(false);
     const [routes,setRoutes] = useState([]);
     const [schedules, setSchedules] = useState([]);
-    // const [selectedFrom, setSelectedFrom] = useState("");
-    // const [selectedTo, setSelectedTo] = useState("");
     const [filteredRoutes, setFilteredRoutes] = useState([]);
     const [city,setCity] = useState([]);
     const datePickerRef = useRef(null);
     const dropdownRef = useRef(null);
+    console.log('schedules',schedules);
     
 
     const navigate = useNavigate();
@@ -100,35 +99,6 @@ const BookingForm = () => {
     const handleIncrementChildren = () => {
         setNumSelectPersonChildren((prev) => prev + 1);
     }
-
-  //   const handleSearchTicket = () => {
-  //     if (!selectedFrom || !selectedTo) {
-  //         alert("Vui lòng chọn đầy đủ các trường dữ liệu");
-  //         return;
-  //     }
-  
-  //     // Nối chuỗi
-  //     const combinedRoute = `${selectedFrom} - ${selectedTo}`;
-  //     // Tìm `routeId` tương ứng với tuyến đường đã chọn
-  //     const matchingRoutes = routes.filter(route => `${route.from} - ${route.to}` === combinedRoute);
-  //     // Lấy danh sách `routeId`
-  //     const matchingRouteIds = matchingRoutes.map(route => route.id);
-  
-  //     // Lọc danh sách lịch trình (`schedules`) có `routeId` trùng khớp
-  //     const filteredSchedules = schedules.filter(schedule => matchingRouteIds.includes(schedule.routeId));
-  
-  //     // Chuyển hướng đến trang kết quả tìm kiếm, hiển thị danh sách vé từ `schedules`
-  //     navigate('/search-results', {
-  //         state: {
-  //             from: selectedFrom,
-  //             to: selectedTo,
-  //             date: selectedDate,
-  //             adults: numSelectAdult,
-  //             children: numSelectChildren,
-  //             results: filteredSchedules,
-  //         },
-  //     });
-  // };
   
   const handleSearchTicket = () => {
     if (!selectedFrom || !selectedTo || !selectedDate) {
@@ -153,7 +123,7 @@ const BookingForm = () => {
     // Lọc lịch trình dựa trên routeId và ngày khởi hành (chuẩn hóa departureTime)
     const filteredSchedules = schedules.filter(schedule => {
         const scheduleDate = format(toZonedTime(schedule.departureTime, timeZone), 'yyyy-MM-dd', { timeZone });
-        return matchingRouteIds.includes(schedule.routeId) && scheduleDate === formattedDate;
+        return matchingRouteIds.includes(schedule.routeId) && scheduleDate === formattedDate && schedule.status === "upcoming";
     });
 
     // Điều hướng đến trang kết quả tìm kiếm
@@ -172,7 +142,7 @@ const BookingForm = () => {
     useEffect(() => {
       const fetchAllCity = async () => {
         const response = await cityVnService.getAllCity();
-        setCity(response.data);
+        setCity(response?.data);
       }
       fetchAllCity();
     }, []);

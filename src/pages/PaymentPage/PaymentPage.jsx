@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   PaymentContainer,
   PaymentWrapper,
@@ -28,10 +28,12 @@ import CustomToast from "../../components/CustomToast/CustomToast";
 const PaymentPage = () => {
   const location = useLocation();
   const paymentData = location.state;
-  const [userName, setUserName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [error, setError] = useState({ userName: "", phoneNumber: "" });
+  console.log('paymentData',paymentData);
+  
   const user = useSelector((state) => state.user.user);
+  const [userName, setUserName] = useState(user?.name || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+  const [error, setError] = useState({ userName: "", phoneNumber: "" });
   const navigate = useNavigate();
 
   const validateName = (name) => {
@@ -47,6 +49,14 @@ const PaymentPage = () => {
       return "Số điện thoại phải có 10-11 chữ số.";
     return "";
   };
+
+  useEffect(() => {
+    if (user) {
+      setUserName(user.name || "");
+      setPhoneNumber(user.phone || "");
+    }
+  }, [user]); 
+  
 
   const handleChange = (setter, validator, fieldName, value) => {
     setter(value);
@@ -161,7 +171,7 @@ const PaymentPage = () => {
               <InfoRow>
                 <InfoLabel>Giờ đi:</InfoLabel>
                 <InfoValue>
-                  {new Date(paymentData.filteredSchedules.arrivalTime).toLocaleTimeString(
+                  {new Date(paymentData.selectedSchedule.departureTime).toLocaleTimeString(
                     "vi-VN",
                     {
                       hour: "2-digit",

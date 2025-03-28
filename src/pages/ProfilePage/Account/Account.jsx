@@ -1,20 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { container, title, field, label, inputField, buttonContainer, button } from './style';
-import { updateUserService } from '../../../services/userService';
+import { getUserById, updateUserService } from '../../../services/userService';
 import { updateUser } from '../../../redux/slides/userSlide';
 
 const Account = () => {
-  const user = useSelector((state) => state.user.user);
-  console.log('user',user);
-  
+  const customerId = useSelector((state) => state.user.user?.uid);
+  const [user,setUser] = useState({});
   const dispatch = useDispatch();
-
   const [formData, setFormData] = useState({
-    displayName: user.displayName || '',
-    email: user.email || '',
-    phoneNumber: user.phoneNumber || '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
+
+  useEffect(() => {
+    try {
+      const fetchUserById = async () => {
+        const response = await getUserById(customerId);
+        if(response?.success) {
+          setUser(response.data);
+          setFormData({
+            name: response.data.name || "",
+            email: response.data.email || "",
+            phone: response.data.phone || "",
+          })
+        }
+      }
+      if(customerId) {
+        fetchUserById();
+      }
+    } catch (error) {
+      console.error("Error",error);
+    }
+  }, [customerId]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,19 +45,11 @@ const Account = () => {
   };
 
   const handleUpdate = async () => {
-    // Kiểm tra xem có trường nào bị bỏ trống không
-    // const isFormComplete = Object.values(formData).every((value) => value.trim() !== '');
-    // if (!isFormComplete) {
-    //   alert('Nhập đủ các trường dữ liệu');
-    //   return;
-    // }
     try {
-      const updatedUser = await updateUserService(user.uid,formData);
-      dispatch(updateUser({ 
-        ...updatedUser
-      }));      
-      if (updatedUser) {
+      const response = await updateUserService(customerId,formData);
+      if (response.success) {
         alert('Cập nhật thông tin thành công!');
+        dispatch(updateUser(response.data));      
       } else {
         alert('Cập nhật thất bại. Vui lòng thử lại.');
       }
@@ -52,13 +64,13 @@ const Account = () => {
       <h2 style={title}>Thông tin tài khoản</h2>
       
       <div style={field}>
-        <label style={label} htmlFor="displayName">Họ và tên:</label>
+        <label style={label} htmlFor="name">Họ và tên:</label>
         <input
           style={inputField}
           type="text"
-          id="displayName"
-          name="displayName"
-          value={formData.displayName}
+          id="name"
+          name="name"
+          value={formData.name}
           onChange={handleChange}
         />
       </div>
@@ -76,13 +88,13 @@ const Account = () => {
       </div>
       
       <div style={field}>
-        <label style={label} htmlFor="phoneNumber">Số điện thoại:</label>
+        <label style={label} htmlFor="phone">Số điện thoại:</label>
         <input
           style={inputField}
           type="text"
-          id="phoneNumber"
-          name="phoneNumber"
-          value={formData.phoneNumber}
+          id="phone"
+          name="phone"
+          value={formData.phone}
           onChange={handleChange}
         />
       </div>
