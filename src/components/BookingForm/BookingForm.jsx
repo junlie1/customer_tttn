@@ -17,6 +17,7 @@ import { cityVnService } from '../../services/cityVnService';
 import { schedulesService } from '../../services/schedulesService';
 import { toZonedTime, format } from 'date-fns-tz';
 import { setFrom, setTo } from '../../redux/slides/bookingSlide';
+import { useSearchParams } from 'react-router-dom';
 
 const BookingForm = () => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -30,8 +31,9 @@ const BookingForm = () => {
     const datePickerRef = useRef(null);
     const dropdownRef = useRef(null);
     console.log('schedules',schedules);
-    
-
+    const [searchParams] = useSearchParams();
+    console.log('searchParams',searchParams);
+    const [hasAutoSearched, setHasAutoSearched] = useState(false);
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const selectedFrom = useSelector(state => state.book.selectedFrom);
@@ -84,6 +86,33 @@ const BookingForm = () => {
       fetchAllSchedules();
     },[])
 
+    useEffect(() => {
+      const fromParam = searchParams.get('from');
+      const toParam = searchParams.get('to');
+      const dateParam = searchParams.get('date');
+    
+      if (!hasAutoSearched && fromParam && toParam && dateParam) {
+        dispatch(setFrom(fromParam));
+        dispatch(setTo(toParam));
+    
+        const parsedDate = new Date(dateParam);
+        if (!isNaN(parsedDate)) {
+          setSelectedDate(parsedDate);
+    
+          setTimeout(() => {
+            setHasAutoSearched(true); // Triggers the next useEffect
+          }, 100);
+        }
+      }
+    }, [searchParams, hasAutoSearched, dispatch]);
+    
+    useEffect(() => {
+      if (hasAutoSearched && selectedDate) {
+        handleSearchTicket(); // gọi sau khi date đã có giá trị thực sự
+      }
+    }, [hasAutoSearched, selectedDate]);
+        
+
     const handleIncrement = () => {
         setNumSelectPersonAdult((prev) => prev + 1);
     };
@@ -127,7 +156,7 @@ const BookingForm = () => {
     });
 
     // Điều hướng đến trang kết quả tìm kiếm
-    navigate('/search-results', {
+    navigate(`/search-results?from=${selectedFrom}&to=${selectedTo}&date=${selectedDate}`, {
         state: {
             from: selectedFrom,
             to: selectedTo,
@@ -138,6 +167,46 @@ const BookingForm = () => {
         },
     });
 };
+useEffect(() => {
+  if (hasAutoSearched && selectedFrom && selectedTo && selectedDate) {
+    let retries = 0;
+    const maxRetries = 10;
+    const interval = setInterval(() => {
+      const timeZone = 'Asia/Ho_Chi_Minh';
+      const formattedDate = format(toZonedTime(selectedDate, timeZone), 'yyyy-MM-dd', { timeZone });
+      const combinedRoute = `${selectedFrom} - ${selectedTo}`;
+      const matchingRoutes = routes.filter(route => `${route.from} - ${route.to}` === combinedRoute);
+      const matchingRouteIds = matchingRoutes.map(route => route.id);
+
+      const filteredSchedules = schedules.filter(schedule => {
+        const scheduleDate = format(toZonedTime(schedule.departureTime, timeZone), 'yyyy-MM-dd', { timeZone });
+        return matchingRouteIds.includes(schedule.routeId) && scheduleDate === formattedDate && schedule.status === "upcoming";
+      });
+      console.log('filteredSchedules',filteredSchedules);
+
+      if (filteredSchedules.length > 0 || retries >= maxRetries) {
+        clearInterval(interval);  // Dừng lại khi có kết quả hoặc retry đủ số lần
+
+        // Chỉ chuyển hướng nếu có kết quả
+        if (filteredSchedules.length > 0) {
+          navigate(`/search-results?from=${selectedFrom}&to=${selectedTo}&date=${selectedDate}`, {
+            state: {
+              from: selectedFrom,
+              to: selectedTo,
+              date: selectedDate,
+              adults: numSelectAdult,
+              children: numSelectChildren,
+              results: filteredSchedules,
+            },
+          });
+        } 
+      }
+      retries++;
+    }, 1000); // mỗi giây kiểm tra lại
+  }
+}, [hasAutoSearched, selectedDate, selectedFrom, selectedTo, routes, schedules]);
+
+
 
     useEffect(() => {
       const fetchAllCity = async () => {

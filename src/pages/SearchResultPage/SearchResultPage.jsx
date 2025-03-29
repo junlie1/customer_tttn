@@ -40,9 +40,19 @@ const SearchResultsPage = () => {
     setSelectedTab({ [routeId]: tab });
   };
 
+  const countAvailableSeats = (seatLayout) => {
+    if (!seatLayout) return 0;
+
+    const countSeats = (floor) =>
+      Object.values(floor || {}).filter(seat => seat?.isBooked === false).length;
+  
+    return countSeats(seatLayout.floor1) + countSeats(seatLayout.floor2);
+  };
+  
+
   // 👉 Xử lý lọc
   const filteredResults = results.filter(schedule => {
-    const availableSeats = schedule.route?.availableSeats || 0;
+    const availableSeats = countAvailableSeats(schedule.seatLayout);
     const seatMatch = seatFilters.length === 0 || seatFilters.some(range => {
       if (range === "0-10") return availableSeats <= 10;
       if (range === "11-20") return availableSeats > 10 && availableSeats <= 20;
@@ -159,7 +169,7 @@ const SearchResultsPage = () => {
                     <div className="route-meta">
                       <span className="bus-type">🚍 {schedule.bus.busType || "Limousine"}</span>
                       <span className="available-seats" style={{ color: "green" }}>
-                        {schedule.route.availableSeats ? `${schedule.route.availableSeats} chỗ trống` : "11 chỗ trống"}
+                        {`${countAvailableSeats(schedule.seatLayout)} chỗ trống`}
                       </span>
                     </div>
                     <div className="route-price">
