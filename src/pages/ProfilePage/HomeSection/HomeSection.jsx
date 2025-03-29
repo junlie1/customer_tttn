@@ -10,7 +10,6 @@ import {
 } from './style';
 import { useSelector } from 'react-redux';
 import Slider from 'react-slick';
-// import SliderComponent from '../../../components/SliderComponent/SliderComponent';
 
 const HomeSection = () => {
   const user = useSelector((state) => state.user.user);
@@ -107,7 +106,6 @@ const HomeSection = () => {
             ))}
           </Slider>
         </SliderContainer> */}
-        <SliderComponent arrImages = {banners}/>
       </PromoSection>
     </Container>
   );
