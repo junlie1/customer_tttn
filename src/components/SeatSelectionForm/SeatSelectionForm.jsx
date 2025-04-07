@@ -25,7 +25,7 @@ const SeatSelectionForm = ({ seatLayoutId, routePrice }) => {
   });
   const user = useSelector((state) => state.user.user);
 
-  // Lấy danh sách lịch trình (giả sử mỗi schedule có trường seatLayoutId)
+  // Lấy danh sách lịch trình
   useEffect(() => {
     const fetchAllSchedules = async () => {
       try {

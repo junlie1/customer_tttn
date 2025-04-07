@@ -82,7 +82,7 @@ const LoginPage = () => {
         }, 1000);
       }
     } catch (error) {
-      setError(error.message);
+      setError(err.message);
       setSuccess("");
     }
   }
