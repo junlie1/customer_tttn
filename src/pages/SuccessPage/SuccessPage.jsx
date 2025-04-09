@@ -1,5 +1,5 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   SuccessContainer,
   SuccessCard,
@@ -13,7 +13,14 @@ import {
 
 const SuccessPage = () => {
   const navigate = useNavigate();
-  const orderId = "1744229936309"; 
+  const location = useLocation();
+  const [orderId, setOrderId] = useState("");
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const id = queryParams.get("orderId");
+    setOrderId(id || "Không tìm thấy mã vé");
+  }, [location.search]);
 
   return (
     <SuccessContainer>
@@ -27,9 +34,7 @@ const SuccessPage = () => {
           Bạn có thể xem chi tiết trong{" "}
           <OrderLink href="https://junwoan-gotta-go.vercel.app/history">Vé của tôi</OrderLink>.
         </SuccessText>
-        <ContinueButton onClick={() => navigate("/")}>
-          Trang chủ
-        </ContinueButton>
+        <ContinueButton onClick={() => navigate("/")}>Trang chủ</ContinueButton>
       </SuccessCard>
     </SuccessContainer>
   );
