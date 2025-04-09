@@ -13,7 +13,7 @@ import {
 
 const SuccessPage = () => {
   const navigate = useNavigate();
-  const orderId = "833883794"; 
+  const orderId = "1744229936309"; 
 
   return (
     <SuccessContainer>
@@ -21,14 +21,12 @@ const SuccessPage = () => {
         <SuccessIcon>✔</SuccessIcon>
         <SuccessTitle>Thanh toán thành công</SuccessTitle>
         <SuccessText>
-          Mã số đơn hàng của bạn là <OrderNumber>{orderId}</OrderNumber>.
+          Mã số vé của bạn là <OrderNumber>{orderId}</OrderNumber>.
         </SuccessText>
         <SuccessText>
           Bạn có thể xem chi tiết trong{" "}
-          <OrderLink href="#">đơn hàng của tôi</OrderLink>.
+          <OrderLink href="https://junwoan-gotta-go.vercel.app/history">Vé của tôi</OrderLink>.
         </SuccessText>
-        <SuccessText>Thời gian dự kiến giao hàng là...</SuccessText>
-
         <ContinueButton onClick={() => navigate("/")}>
           Trang chủ
         </ContinueButton>
