@@ -28,8 +28,7 @@ import CustomToast from "../../components/CustomToast/CustomToast";
 const PaymentPage = () => {
   const location = useLocation();
   const paymentData = location.state;
-  console.log('paymentData',paymentData);
-  
+
   const user = useSelector((state) => state.user.user);
   const [userName, setUserName] = useState(user?.name || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
@@ -55,8 +54,8 @@ const PaymentPage = () => {
       setUserName(user.name || "");
       setPhoneNumber(user.phone || "");
     }
-  }, [user]); 
-  
+  }, [user]);
+
 
   const handleChange = (setter, validator, fieldName, value) => {
     setter(value);
@@ -100,13 +99,11 @@ const PaymentPage = () => {
     const updatedPaymentData = {
       ...paymentData,
       userData: {
-          ...paymentData.userData,
-          name: userName,
-          phoneNumber: phoneNumber,  
+        ...paymentData.userData,
+        name: userName,
+        phoneNumber: phoneNumber,
       }
-  };
-  console.log('updatedPaymentData',updatedPaymentData);
-  
+    };
     try {
       const userInfo = { userName, phoneNumber };
       const paymentUrl = await createPayment(updatedPaymentData, userInfo);

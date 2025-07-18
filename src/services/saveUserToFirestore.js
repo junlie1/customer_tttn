@@ -19,9 +19,7 @@ export const saveUserToFirestore = async (user) => {
       };
 
       await setDoc(userRef, userData);
-      console.log("✅ User successfully saved to Firestore:", userData);
     } else {
-      console.log("⚠️ User already exists in Firestore.");
     }
   } catch (error) {
     console.error("❌ Error saving user to Firestore:", error);

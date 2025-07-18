@@ -7,8 +7,6 @@ export const createPayment = async (updatedPaymentData, userInfo) => {
     const orderId = Date.now().toString();
     const amount = updatedPaymentData.totalPrice;
     const orderInfo = `Thanh toán vé xe cho tuyến ${updatedPaymentData.routeName} - Họ tên: ${userInfo.userName}, SĐT: ${userInfo.phoneNumber}`;
-    console.log('updatedPaymentData',updatedPaymentData);
-
     const response = await axios.post(`${api}/payment/create_payment_url`, { 
       orderId, 
       amount, 

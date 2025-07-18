@@ -42,15 +42,14 @@ const LoginPage = () => {
   const handleLogin = async () => {
     try {
       const response = await loginUser(email, password);
-      console.log('response',response);
-      
-      setError(""); 
+
+      setError("");
       if (response.status === 200) {
         dispatch(setUser(response.data));
-        setSuccess("Đăng nhập thành công!"); 
+        setSuccess("Đăng nhập thành công!");
         setTimeout(() => {
           setSuccess("");
-          navigate("/"); 
+          navigate("/");
         }, 1000);
       }
     } catch (err) {
@@ -71,14 +70,12 @@ const LoginPage = () => {
   const handleLoginByGoogle = async () => {
     try {
       const response = await loginByGoogle();
-      console.log('response',response.data);
-      
-      if(response.success) {
+      if (response.success) {
         dispatch(setUser(response?.data));
-        setSuccess("Đăng nhập thành công!"); 
+        setSuccess("Đăng nhập thành công!");
         setTimeout(() => {
           setSuccess("");
-          navigate("/"); 
+          navigate("/");
         }, 1000);
       }
     } catch (error) {
@@ -90,8 +87,6 @@ const LoginPage = () => {
   const handleLoginByFacebook = async () => {
     try {
       const response = await loginByFacebook();
-      console.log('response',response);
-      
       if (response.success) {
         dispatch(setUser(response?.data));
         setSuccess("Đăng nhập thành công!");
@@ -114,7 +109,7 @@ const LoginPage = () => {
       setError("Vui lòng nhập email để khôi phục mật khẩu.");
       return;
     }
-  
+
     const result = await sendResetPasswordEmail(email);
     if (result.success) {
       setSuccess(result.message);
@@ -172,7 +167,7 @@ const LoginPage = () => {
         <SocialLogin>
           <span>- or -</span>
           <div>
-            <img src={gg_icon} alt="Google Login" onClick = {handleLoginByGoogle}/>
+            <img src={gg_icon} alt="Google Login" onClick={handleLoginByGoogle} />
             <img src={fb_icon} alt="Facebook Login" onClick={handleLoginByFacebook} />
           </div>
         </SocialLogin>

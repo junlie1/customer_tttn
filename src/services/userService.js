@@ -106,8 +106,6 @@ export const loginByGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    console.log('user',user);
-    
     // Lưu thông tin vào Firestore
     await saveUserToFirestore(user);
 

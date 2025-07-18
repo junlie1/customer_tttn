@@ -15,7 +15,6 @@ const HomeSection = () => {
   const user = useSelector((state) => state.user.user);
   const [orders, setOrders] = useState([]);
   const [banners, setBanners] = useState([]);
-  console.log('banners', banners);
 
   // // Lấy danh sách đơn hàng
   // useEffect(() => {
