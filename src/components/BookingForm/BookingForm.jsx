@@ -112,6 +112,8 @@ const BookingForm = () => {
     dispatch(setFrom(selectedFrom));
     dispatch(setTo(selectedTo));
 
+    setIsLoading(true);
+
     const timeZone = 'Asia/Ho_Chi_Minh';
     const formattedDate = format(toZonedTime(selectedDate, timeZone), 'yyyy-MM-dd', { timeZone });
     const combinedRoute = `${selectedFrom} - ${selectedTo}`;

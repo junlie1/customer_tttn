@@ -132,7 +132,6 @@ export const loginByFacebook = async () => {
   provider.setCustomParameters({
     display: "popup",
   });
-
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;

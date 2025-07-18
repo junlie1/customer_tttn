@@ -1,5 +1,5 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   SuccessContainer,
   SuccessCard,
@@ -13,7 +13,14 @@ import {
 
 const SuccessPage = () => {
   const navigate = useNavigate();
-  const orderId = "833883794"; 
+  const location = useLocation();
+  const [orderId, setOrderId] = useState("");
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const id = queryParams.get("orderId");
+    setOrderId(id || "Không tìm thấy mã vé");
+  }, [location.search]);
 
   return (
     <SuccessContainer>
@@ -21,17 +28,13 @@ const SuccessPage = () => {
         <SuccessIcon>✔</SuccessIcon>
         <SuccessTitle>Thanh toán thành công</SuccessTitle>
         <SuccessText>
-          Mã số đơn hàng của bạn là <OrderNumber>{orderId}</OrderNumber>.
+          Mã số vé của bạn là <OrderNumber>{orderId}</OrderNumber>.
         </SuccessText>
         <SuccessText>
           Bạn có thể xem chi tiết trong{" "}
-          <OrderLink href="#">đơn hàng của tôi</OrderLink>.
+          <OrderLink href="https://junwoan-gotta-go.vercel.app/history">Vé của tôi</OrderLink>.
         </SuccessText>
-        <SuccessText>Thời gian dự kiến giao hàng là...</SuccessText>
-
-        <ContinueButton onClick={() => navigate("/")}>
-          Trang chủ
-        </ContinueButton>
+        <ContinueButton onClick={() => navigate("/")}>Trang chủ</ContinueButton>
       </SuccessCard>
     </SuccessContainer>
   );
