@@ -17,6 +17,9 @@ import SeatSelectionForm from '../../components/SeatSelectionForm/SeatSelectionF
 import ScheduleForm from '../../components/ScheduleForm/ScheduleForm';
 import PolicyForm from '../../components/PolicyForm/PolicyForm';
 import UpcomingScheduleNotice from '../../components/UpcomingScheduleNotice/UpcomingScheduleNotice';
+import { useRoutesMap } from '../../hooks/useRoutesMap';
+import { useSeatLayoutMap } from '../../hooks/useSeatLayoutMap';
+import { useBusMap } from '../../hooks/useBusMap';
 
 const SearchResultsPage = () => {
   const location = useLocation();
@@ -29,6 +32,10 @@ const SearchResultsPage = () => {
   const [seatFilters, setSeatFilters] = useState([]);
   const [timeFilters, setTimeFilters] = useState([]);
 
+  const routesMap = useRoutesMap(results);
+  const seatLayoutMap = useSeatLayoutMap(results);
+  const busesMap = useBusMap(results);
+
   const handleSelectSchedule = (scheduleId) => {
     setSelectedScheduleId(scheduleId);
     setSelectedTab(prev => ({ ...prev, [scheduleId]: "Chọn ghế" }));
@@ -38,18 +45,27 @@ const SearchResultsPage = () => {
     const rawResults = location.state?.results || [];
 
     setIsLoading(true);
-    setIsFetched(false); // reset flag mỗi lần load lại
+    setIsFetched(false);
 
     setTimeout(() => {
-      const enriched = rawResults.map(schedule => ({
-        ...schedule,
-        availableSeats: countAvailableSeats(schedule.seatLayout),
-      }));
+      const enriched = rawResults.map(schedule => {
+        const route = routesMap[schedule.routeId];
+        const seatLayout = seatLayoutMap[schedule.seatLayoutId];
+
+        return {
+          ...schedule,
+          route,
+          seatLayout,
+          availableSeats: countAvailableSeats(seatLayout),
+        };
+      });
+
       setResults(enriched);
       setIsLoading(false);
-      setIsFetched(true); // đánh dấu đã fetch xong
+      setIsFetched(true);
     }, 800);
-  }, [location.state]);
+  }, [location.state, routesMap, seatLayoutMap]);
+
 
   const handleTabClick = (routeId, tab) => {
     setSelectedTab({ [routeId]: tab });
@@ -86,6 +102,8 @@ const SearchResultsPage = () => {
       return seatMatch && timeMatch;
     });
   }, [results, seatFilters, timeFilters]);
+  const firstSchedule = filteredResults[0];
+  const routeName = firstSchedule ? routesMap[firstSchedule.routeId]?.routeName : '';
 
   return (
     <>
@@ -168,86 +186,94 @@ const SearchResultsPage = () => {
               :
               isFetched && filteredResults.length > 0 ? (
                 <>
-                  <h2>{filteredResults[0].route.routeName} ({filteredResults.length})</h2>
+                  <h2>{routeName} ({filteredResults.length})</h2>
                   <SearchResultsList>
-                    {filteredResults.map(schedule => (
-                      <div key={schedule.id} className="result-item" style={{
-                        cursor: "pointer",
-                        border: selectedScheduleId === schedule.id ? '1px solid #ff5722' : 'none',
-                        padding: '10px',
-                        marginBottom: '10px'
-                      }}>
-                        {/* Cột thông tin */}
-                        <div className="route-info">
-                          <span className="time">
-                            {schedule.departureTime ? new Date(schedule.departureTime).toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                              timeZone: "Asia/Ho_Chi_Minh"
-                            }) : "16:00"}
-                          </span>
-                          <span className="location">{schedule.route.startPoint || "Bến Xe Miền Tây"}</span>
-                        </div>
-                        <div className="route-meta">
-                          <div className="route-line">
-                            <img src={start_point} alt="start" className="icon-start" />
-                            <span className="dashed-line"></span>
-                            <span className="travel-time">{`${Math.floor(schedule.route.duration / 60)} giờ` || "4 giờ"}</span>
-                            <span className="dashed-line"></span>
-                            <img src={end_point} alt="end" className="icon-end" />
-                          </div>
-                        </div>
-                        <div className="route-info">
-                          <span className="time">
-                            {schedule.arrivalTime ? new Date(schedule.arrivalTime).toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                              timeZone: "Asia/Ho_Chi_Minh"
-                            }) : "20:00"}
-                          </span>
-                          <span className="location">{schedule.route.endPoint || "Bến Xe Trà Vinh"}</span>
-                        </div>
-                        <div className="route-meta">
-                          <span className="bus-type">🚍 {schedule.bus.busType || "Limousine"}</span>
-                          <span className="available-seats" style={{ color: "green" }}>
-                            {`${schedule.availableSeats} chỗ trống`}
-                          </span>
-                        </div>
-                        <div className="route-price">
-                          {schedule.price ? `${schedule.price} đ` : "160.000 đ"}
-                        </div>
-                        <hr className="divider" />
+                    <>
+                      {filteredResults.map((schedule) => {
+                        const route = routesMap[schedule.routeId];
+                        const bus = busesMap[schedule.busId];
+                        const setLayout = seatLayoutMap[schedule.seatLayoutId];
 
-                        <div className="options-container">
-                          <div className="extra-options">
-                            {["Chọn ghế", "Lịch trình", "Chính sách"].map((tab) => (
-                              <span
-                                key={tab}
-                                className={`tab ${selectedTab[schedule.id] === tab ? "active" : ""}`}
-                                onClick={() => handleTabClick(schedule.id, tab)}
-                              >
-                                {tab}
+                        return (
+                          <div key={schedule.id} className="result-item" style={{
+                            cursor: "pointer",
+                            border: selectedScheduleId === schedule.id ? '1px solid #ff5722' : 'none',
+                            padding: '10px',
+                            marginBottom: '10px'
+                          }}>
+                            {/* Cột thông tin */}
+                            <div className="route-info">
+                              <span className="time">
+                                {schedule.departureTime ? new Date(schedule.departureTime).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "Asia/Ho_Chi_Minh"
+                                }) : "16:00"}
                               </span>
-                            ))}
-                          </div>
-                          <button
-                            className="route-btn"
-                            style={{ backgroundColor: selectedScheduleId === schedule.id ? "#ff5722" : "#ccc", color: "white" }}
-                            onClick={() => handleSelectSchedule(schedule.id)}
-                          >
-                            Chọn chuyến
-                          </button>
-                        </div>
+                              <span className="location">{route?.startPoint || "Bến Xe Miền Tây"}</span>
+                            </div>
+                            <div className="route-meta">
+                              <div className="route-line">
+                                <img src={start_point} alt="start" className="icon-start" />
+                                <span className="dashed-line"></span>
+                                <span className="travel-time">{`${Math.floor(route?.duration / 60)} giờ` || "4 giờ"}</span>
+                                <span className="dashed-line"></span>
+                                <img src={end_point} alt="end" className="icon-end" />
+                              </div>
+                            </div>
+                            <div className="route-info">
+                              <span className="time">
+                                {schedule.arrivalTime ? new Date(schedule.arrivalTime).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                  timeZone: "Asia/Ho_Chi_Minh"
+                                }) : "20:00"}
+                              </span>
+                              <span className="location">{route?.endPoint || "Bến Xe Trà Vinh"}</span>
+                            </div>
+                            <div className="route-meta">
+                              <span className="bus-type">🚍 {bus?.busType || "Limousine"}</span>
+                              <span className="available-seats" style={{ color: "green" }}>
+                                {`${schedule.availableSeats} chỗ trống`}
+                              </span>
+                            </div>
+                            <div className="route-price">
+                              {schedule.price ? `${schedule.price} đ` : "160.000 đ"}
+                            </div>
+                            <hr className="divider" />
 
-                        <div className="tab-content active">
-                          {selectedTab[schedule.id] === "Chọn ghế" && <SeatSelectionForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
-                          {selectedTab[schedule.id] === "Lịch trình" && <ScheduleForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
-                          {selectedTab[schedule.id] === "Chính sách" && <PolicyForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
-                        </div>
-                      </div>
-                    ))}
+                            <div className="options-container">
+                              <div className="extra-options">
+                                {["Chọn ghế", "Lịch trình", "Chính sách"].map((tab) => (
+                                  <span
+                                    key={tab}
+                                    className={`tab ${selectedTab[schedule.id] === tab ? "active" : ""}`}
+                                    onClick={() => handleTabClick(schedule.id, tab)}
+                                  >
+                                    {tab}
+                                  </span>
+                                ))}
+                              </div>
+                              <button
+                                className="route-btn"
+                                style={{ backgroundColor: selectedScheduleId === schedule.id ? "#ff5722" : "#ccc", color: "white" }}
+                                onClick={() => handleSelectSchedule(schedule.id)}
+                              >
+                                Chọn chuyến
+                              </button>
+                            </div>
+
+                            <div className="tab-content active">
+                              {selectedTab[schedule.id] === "Chọn ghế" && <SeatSelectionForm scheduleId={schedule.id} schedule={schedule} seatLayout={setLayout} route={route} />}
+                              {selectedTab[schedule.id] === "Lịch trình" && <ScheduleForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
+                              {selectedTab[schedule.id] === "Chính sách" && <PolicyForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
                   </SearchResultsList>
                 </>
               ) : isFetched && filteredResults.length === 0 ? (

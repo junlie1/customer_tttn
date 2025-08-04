@@ -15,55 +15,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-const SeatSelectionForm = ({ seatLayoutId, routePrice }) => {
+const SeatSelectionForm = ({ scheduleId, schedule, seatLayout, route }) => {
   const navigate = useNavigate();
-  const [route, setRoute] = useState({});
-  const [schedules, setSchedules] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState({
     floor1: [],
     floor2: []
   });
   const user = useSelector((state) => state.user.user);
-
-  // Lấy danh sách lịch trình
-  useEffect(() => {
-    const fetchAllSchedules = async () => {
-      try {
-        const response = await schedulesService.getSchedules();
-        if (response.success) {
-          setSchedules(response.data);
-        } else {
-          console.error("Lỗi khi lấy lịch trình:", response.message);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu lịch trình:", error);
-      }
-    };
-    fetchAllSchedules();
-  }, []);
-
-  // Lấy schedule được chọn dựa trên seatLayoutId
-  const selectedSchedule = useMemo(() => {
-    return schedules.find(schedule => schedule.seatLayoutId === seatLayoutId);
-  }, [schedules, seatLayoutId]);
-  
-  useEffect(() => {
-    if (selectedSchedule && selectedSchedule.routeId) {
-      const fetchRouteById = async () => {
-        try {
-          const response = await routeService.getRouteById(selectedSchedule.routeId);
-          if (response.success) {
-            setRoute(response.data);
-          } else {
-            console.error("Không tìm thấy tuyến đường:", response.message);
-          }
-        } catch (error) {
-          console.error("Lỗi khi lấy dữ liệu tuyến:", error);
-        }
-      };
-      fetchRouteById();
-    }
-  }, [selectedSchedule]);
 
   const handleSeatClick = (floor, seatNumber, seatData) => {
     if (seatData.isBooked) return;
@@ -87,21 +45,21 @@ const SeatSelectionForm = ({ seatLayoutId, routePrice }) => {
     ...selectedSeats.floor1,
     ...selectedSeats.floor2
   ];
-  const totalPrice = totalSelectedSeats.length * routePrice * 1000;
+  const totalPrice = totalSelectedSeats.length * route?.price * 1000;
   const totalPriceFormatted = totalPrice.toLocaleString('vi-VN') + " VNĐ";
-  
+
   const handleNavigatePayment = () => {
     const paymentData = {
-      routeId: selectedSchedule?.routeId,
+      routeId: route?.id,
       routeName: route?.routeName,
       selectedSeats: totalSelectedSeats,
       routePrice: route?.price,
       totalPrice: totalPriceFormatted,
       userData: user,
-      selectedSchedule: selectedSchedule,
-      vendorId: selectedSchedule.vendorId
+      selectedSchedule: schedule,
+      vendorId: schedule?.vendorId
     };
-    navigate(`/payment?${selectedSchedule?.routeId}&${route?.price}${user.uid}&${route?.routeName}`, { state: paymentData });
+    navigate(`/payment?${schedule?.routeId}&${route?.price}${user.uid}&${route?.routeName}`, { state: paymentData });
   };
 
   return (
@@ -123,12 +81,12 @@ const SeatSelectionForm = ({ seatLayoutId, routePrice }) => {
         </LegendItem>
       </LegendContainer>
 
-      {selectedSchedule && selectedSchedule.seatLayout ? (
+      {schedule && schedule.seatLayout ? (
         <div>
           <h4>Sơ đồ ghế:</h4>
           <FloorTitle>Tầng dưới</FloorTitle>
           <SeatContainer>
-            {Object.entries(selectedSchedule.seatLayout.floor1).map(
+            {Object.entries(seatLayout.floor1).map(
               ([seatNumber, seatData]) => {
                 let status = 'available';
                 if (seatData.isBooked) {
@@ -153,11 +111,11 @@ const SeatSelectionForm = ({ seatLayoutId, routePrice }) => {
             )}
           </SeatContainer>
 
-          {selectedSchedule.seatLayout.floor2 && (
+          {seatLayout.floor2 && (
             <>
               <FloorTitle>Tầng trên</FloorTitle>
               <SeatContainer>
-                {Object.entries(selectedSchedule.seatLayout.floor2).map(
+                {Object.entries(seatLayout.floor2).map(
                   ([seatNumber, seatData]) => {
                     let status = 'available';
                     if (seatData.isBooked) {

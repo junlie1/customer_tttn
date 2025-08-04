@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { routeService } from '../../services/routeService';
-import { schedulesService } from '../../services/schedulesService';
+import { useSelector } from 'react-redux';
+import { useRoutesMap } from '../../hooks/useRoutesMap';
+import { useSeatLayoutMap } from '../../hooks/useSeatLayoutMap';
 
 const NoticeWrapper = styled.div`
   background-color: #fff8e1;
@@ -14,73 +15,68 @@ const NoticeWrapper = styled.div`
 `;
 
 const UpcomingScheduleNotice = () => {
-    const [schedules, setSchedules] = useState([]);
-    console.log("schedules", schedules);
+    const { data: schedules } = useSelector((state) => state.schedules);
+    const now = new Date();
 
-    const [error, setError] = useState(false); // để xử lý khi gọi API lỗi
+    const upcoming = schedules
+        .filter(item => {
+            const depTime = new Date(item.departureTime);
+            return item.status !== 'completed' && depTime < now;
+        })
+        .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime))
+        .slice(0, 5);
 
-    useEffect(() => {
-        const fetchUpcoming = async () => {
-            try {
-                const response = await schedulesService.getSchedules();
+    const routesMap = useRoutesMap(upcoming);
+    const seatLayoutMap = useSeatLayoutMap(upcoming);
 
-                const upcoming = response.data
-                    .filter(item => item.status !== "completed")
-                    .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime))
-                    .slice(0, 5);
+    const calculateAvailableSeats = (seatLayout) => {
+        if (!seatLayout) return 0;
+        const floor1Seats = Object.values(seatLayout.floor1 || {});
+        const floor2Seats = Object.values(seatLayout.floor2 || {});
+        const allSeats = [...floor1Seats, ...floor2Seats];
+        return allSeats.filter(seat => seat.isBooked === false).length;
+    };
 
-                setSchedules(upcoming);
-            } catch (err) {
-                console.error('Error fetching schedules:', err);
-                setError(true);
-            }
-        };
-
-        fetchUpcoming();
-    }, []);
-
-    const calculateAvailableSeat = (seatLayout) => {
-        const seatsFloor1 = Object.values(seatLayout.floor1 || {});
-        const seatsFloor2 = Object.values(seatLayout.floor2 || {});
-        const allSeats = [
-            ...seatsFloor1,
-            ...seatsFloor2
-        ];
-        const availableSeats = allSeats.filter((seat) => seat.isBooked === false);
-        return availableSeats.length;
-    }
 
     return (
         <NoticeWrapper>
             <marquee behavior="scroll" direction="left" scrollamount="4">
-                {error || schedules.length === 0 ? (
+                {upcoming.length === 0 ? (
                     <>Không có lịch trình nào đang hoạt động. Vui lòng liên hệ tổng đài: 038512xxxx để nhận tư vấn.</>
                 ) : (
-                    schedules.map((s, i) => {
-                        if (s.status === "upcoming") {
-                            const depTime = new Date(s.departureTime);
-                            const timeStr = depTime.toLocaleTimeString('vi-VN', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false,
-                                timeZone: 'Asia/Ho_Chi_Minh'
-                            });
-                            const dateStr = depTime.toLocaleDateString('vi-VN', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                timeZone: 'Asia/Ho_Chi_Minh'
-                            });
+                    upcoming.map((s, i) => {
+                        const route = routesMap[s.routeId];
+                        const seatLayout = seatLayoutMap[s.seatLayoutId];
+                        const depTime = new Date(s.departureTime);
 
-                            return `🚍 ${s.route?.startPoint} → ${s.route?.endPoint} | ${timeStr} ${dateStr} | còn ${calculateAvailableSeat(s.seatLayout)} ghế${i < schedules.length - 1 ? ' — ' : ''
-                                }`;
-                        }
-                        return "Không có lịch trình nào đang hoạt động. Vui lòng liên hệ tổng đài: 038512xxxx để nhận tư vấn."
+                        const timeStr = depTime.toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                            timeZone: 'Asia/Ho_Chi_Minh'
+                        });
+
+                        const dateStr = depTime.toLocaleDateString('vi-VN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            timeZone: 'Asia/Ho_Chi_Minh'
+                        });
+
+                        const routeName = route
+                            ? `${route.startPoint} → ${route.endPoint}`
+                            : `Tuyến ${s.routeId}`;
+                        const availableSeats = calculateAvailableSeats(seatLayout);
+
+                        return (
+                            `🚍 ${routeName} | ${timeStr} ${dateStr} | còn ${availableSeats} ghế${i < upcoming.length - 1 ? ' — ' : ''}`
+                        );
                     })
                 )}
             </marquee>
         </NoticeWrapper>
     );
+
 };
 
 export default UpcomingScheduleNotice;

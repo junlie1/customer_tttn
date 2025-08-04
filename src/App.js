@@ -1,8 +1,10 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { routes } from "./routes";
+import { useListenSchedules } from './hooks/useListenSchedules';
 
 function App() {
+    useListenSchedules();
     return (
         <Router>
             <Routes>

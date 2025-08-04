@@ -14,6 +14,7 @@ import { schedulesService } from '../../services/schedulesService';
 import { toZonedTime, format } from 'date-fns-tz';
 import { setFrom, setTo } from '../../redux/slides/bookingSlide';
 import { useSearchParams } from 'react-router-dom';
+import { useRoutesMap } from '../../hooks/useRoutesMap';
 
 const BookingForm = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -21,7 +22,7 @@ const BookingForm = () => {
   const [numSelectChildren, setNumSelectPersonChildren] = useState(1);
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const [routes, setRoutes] = useState([]);
-  const [schedules, setSchedules] = useState([]);
+  const { data: schedules } = useSelector((state) => state.schedules);
   const [city, setCity] = useState([]);
   const datePickerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -29,6 +30,7 @@ const BookingForm = () => {
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const routeMaps = useRoutesMap(schedules);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -57,18 +59,6 @@ const BookingForm = () => {
       }
     };
     fetchRoutes();
-  }, []);
-
-  useEffect(() => {
-    const fetchAllSchedules = async () => {
-      try {
-        const response = await schedulesService.getSchedules();
-        setSchedules(response.data);
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu lịch trình:", error);
-      }
-    }
-    fetchAllSchedules();
   }, []);
 
   //Using for AI chatbot URL
@@ -116,13 +106,18 @@ const BookingForm = () => {
 
     const timeZone = 'Asia/Ho_Chi_Minh';
     const formattedDate = format(toZonedTime(selectedDate, timeZone), 'yyyy-MM-dd', { timeZone });
-    const combinedRoute = `${selectedFrom} - ${selectedTo}`;
-    const matchingRoutes = routes.filter(route => `${route.from} - ${route.to}` === combinedRoute);
-    const matchingRouteIds = matchingRoutes.map(route => route.id);
-
     const filteredSchedules = schedules.filter(schedule => {
+      const route = routeMaps[schedule.routeId];
+      if (!route) return false;
+
+      const isMatchingRoute = route.from === selectedFrom && route.to === selectedTo;
       const scheduleDate = format(toZonedTime(schedule.departureTime, timeZone), 'yyyy-MM-dd', { timeZone });
-      return matchingRouteIds.includes(schedule.routeId) && scheduleDate === formattedDate && schedule.status === "upcoming";
+
+      return (
+        isMatchingRoute &&
+        scheduleDate === formattedDate &&
+        schedule.status === "upcoming"
+      );
     });
 
     navigate(`/search-results?from=${selectedFrom}&to=${selectedTo}&date=${selectedDate}`, {
