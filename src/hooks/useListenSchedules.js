@@ -17,9 +17,6 @@ export const useListenSchedules = () => {
                 );
                 dispatch(setSchedules(sanitized));
             },
-            (error) => {
-                dispatch(setError(error.message));
-            }
         );
 
         return () => unsubscribe();
