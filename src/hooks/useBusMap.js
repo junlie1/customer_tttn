@@ -14,7 +14,7 @@ export const useBusMap = (schedules) => {
                     const res = await busService.getBusById(id);
                     newMap[id] = { id, ...res.data };
                 } catch (err) {
-                    console.error('Failed to fetch route:', err);
+                    console.error('Failed to fetch bus:', err);
                 }
             }));
             setBusesMap(newMap);

@@ -28,6 +28,7 @@ import CustomToast from "../../components/CustomToast/CustomToast";
 const PaymentPage = () => {
   const location = useLocation();
   const paymentData = location.state;
+  console.log("paymentData", paymentData);
 
   const user = useSelector((state) => state.user.user);
   const [userName, setUserName] = useState(user?.name || "");
@@ -45,7 +46,7 @@ const PaymentPage = () => {
   const validatePhoneNumber = (phone) => {
     if (!phone.trim()) return "Số điện thoại không được để trống.";
     if (!/^\d{10,11}$/.test(phone))
-      return "Số điện thoại phải có 10-11 chữ số.";
+      return "Số điện thoại phải có 10-11 số.";
     return "";
   };
 
@@ -121,15 +122,18 @@ const PaymentPage = () => {
         <PaymentLeft>
           <Section>
             <SectionTitle>Thông tin khách hàng</SectionTitle>
-            <Note>
-              Các trường có dấu <RequiredStar>*</RequiredStar> là bắt buộc.
-            </Note>
+            {(error.userName || error.phoneNumber || !userName || !phoneNumber) && (
+              <Note>
+                Các trường có dấu <RequiredStar>*</RequiredStar> là bắt buộc.
+              </Note>
+            )}
             <CustomerForm>
               <FormGroup>
                 <Label>
                   Họ tên <RequiredStar>*</RequiredStar>
                 </Label>
                 <Input
+                  isValid={error.userName === "" && userName !== ""}
                   type="text"
                   value={userName}
                   onChange={(e) =>
@@ -144,11 +148,16 @@ const PaymentPage = () => {
                   Số điện thoại <RequiredStar>*</RequiredStar>
                 </Label>
                 <Input
+                  isValid={error.phoneNumber === "" && phoneNumber !== ""}
                   type="text"
                   value={phoneNumber}
-                  onChange={(e) =>
-                    handleChange(setPhoneNumber, validatePhoneNumber, "phoneNumber", e.target.value)
-                  }
+                  onChange={(e) => {
+                    let onlyNumbers = e.target.value.replace(/\D/g, "");
+                    if (onlyNumbers.length > 11) {
+                      onlyNumbers = onlyNumbers.slice(0, 11);
+                    }
+                    handleChange(setPhoneNumber, validatePhoneNumber, "phoneNumber", onlyNumbers);
+                  }}
                   placeholder="Nhập số điện thoại..."
                 />
                 {error.phoneNumber && <ErrorMessage>{error.phoneNumber}</ErrorMessage>}

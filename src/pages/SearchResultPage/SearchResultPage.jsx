@@ -42,30 +42,21 @@ const SearchResultsPage = () => {
   };
 
   useEffect(() => {
-    const rawResults = location.state?.results || [];
-
     setIsLoading(true);
     setIsFetched(false);
 
-    setTimeout(() => {
-      const enriched = rawResults.map(schedule => {
-        const route = routesMap[schedule.routeId];
-        const seatLayout = seatLayoutMap[schedule.seatLayoutId];
-
-        return {
-          ...schedule,
-          route,
-          seatLayout,
-          availableSeats: countAvailableSeats(seatLayout),
-        };
-      });
-
-      setResults(enriched);
+    const timer = setTimeout(() => {
       setIsLoading(false);
       setIsFetched(true);
-    }, 800);
-  }, [location.state, routesMap, seatLayoutMap]);
+    }, 300);
 
+    return () => clearTimeout(timer);
+  }, [location.key]);
+
+  useEffect(() => {
+    const oldResult = location.state?.results;
+    setResults(oldResult);
+  }, [location.state.results])
 
   const handleTabClick = (routeId, tab) => {
     setSelectedTab({ [routeId]: tab });
@@ -192,7 +183,8 @@ const SearchResultsPage = () => {
                       {filteredResults.map((schedule) => {
                         const route = routesMap[schedule.routeId];
                         const bus = busesMap[schedule.busId];
-                        const setLayout = seatLayoutMap[schedule.seatLayoutId];
+                        const layoutData = seatLayoutMap[schedule.seatLayoutId];
+                        const availableSeats = countAvailableSeats(layoutData);
 
                         return (
                           <div key={schedule.id} className="result-item" style={{
@@ -236,7 +228,7 @@ const SearchResultsPage = () => {
                             <div className="route-meta">
                               <span className="bus-type">🚍 {bus?.busType || "Limousine"}</span>
                               <span className="available-seats" style={{ color: "green" }}>
-                                {`${schedule.availableSeats} chỗ trống`}
+                                {`${availableSeats} chỗ trống`}
                               </span>
                             </div>
                             <div className="route-price">
@@ -266,7 +258,7 @@ const SearchResultsPage = () => {
                             </div>
 
                             <div className="tab-content active">
-                              {selectedTab[schedule.id] === "Chọn ghế" && <SeatSelectionForm scheduleId={schedule.id} schedule={schedule} seatLayout={setLayout} route={route} />}
+                              {selectedTab[schedule.id] === "Chọn ghế" && <SeatSelectionForm scheduleId={schedule.id} schedule={schedule} seatLayout={layoutData} route={route} />}
                               {selectedTab[schedule.id] === "Lịch trình" && <ScheduleForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
                               {selectedTab[schedule.id] === "Chính sách" && <PolicyForm seatLayoutId={schedule.seatLayoutId} routePrice={schedule.price} />}
                             </div>

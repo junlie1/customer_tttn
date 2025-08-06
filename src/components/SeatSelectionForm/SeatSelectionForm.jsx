@@ -15,7 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-const SeatSelectionForm = ({ scheduleId, schedule, seatLayout, route }) => {
+const SeatSelectionForm = ({ schedule, seatLayout, route }) => {
   const navigate = useNavigate();
   const [selectedSeats, setSelectedSeats] = useState({
     floor1: [],
@@ -57,7 +57,8 @@ const SeatSelectionForm = ({ scheduleId, schedule, seatLayout, route }) => {
       totalPrice: totalPriceFormatted,
       userData: user,
       selectedSchedule: schedule,
-      vendorId: schedule?.vendorId
+      vendorId: schedule?.vendorId,
+      route: route
     };
     navigate(`/payment?${schedule?.routeId}&${route?.price}${user.uid}&${route?.routeName}`, { state: paymentData });
   };
@@ -81,7 +82,7 @@ const SeatSelectionForm = ({ scheduleId, schedule, seatLayout, route }) => {
         </LegendItem>
       </LegendContainer>
 
-      {schedule && schedule.seatLayout ? (
+      {seatLayout ? (
         <div>
           <h4>Sơ đồ ghế:</h4>
           <FloorTitle>Tầng dưới</FloorTitle>

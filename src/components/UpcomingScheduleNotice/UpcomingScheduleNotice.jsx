@@ -21,7 +21,7 @@ const UpcomingScheduleNotice = () => {
     const upcoming = schedules
         .filter(item => {
             const depTime = new Date(item.departureTime);
-            return item.status !== 'completed' && depTime < now;
+            return item.status !== 'completed' && depTime >= now;
         })
         .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime))
         .slice(0, 5);

@@ -15,13 +15,13 @@ import { toZonedTime, format } from 'date-fns-tz';
 import { setFrom, setTo } from '../../redux/slides/bookingSlide';
 import { useSearchParams } from 'react-router-dom';
 import { useRoutesMap } from '../../hooks/useRoutesMap';
+import Select from 'react-select';
 
 const BookingForm = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [numSelectAdult, setNumSelectPersonAdult] = useState(1);
   const [numSelectChildren, setNumSelectPersonChildren] = useState(1);
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
-  const [routes, setRoutes] = useState([]);
   const { data: schedules } = useSelector((state) => state.schedules);
   const [city, setCity] = useState([]);
   const datePickerRef = useRef(null);
@@ -29,6 +29,8 @@ const BookingForm = () => {
   const [searchParams] = useSearchParams();
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const now = new Date();
 
   const routeMaps = useRoutesMap(schedules);
   const navigate = useNavigate();
@@ -45,20 +47,6 @@ const BookingForm = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const fetchRoutes = async () => {
-      try {
-        const response = await routeService.getRoutes();
-        if (response.success) {
-          setRoutes(response.data);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu tuyến đường:", error);
-      }
-    };
-    fetchRoutes();
   }, []);
 
   //Using for AI chatbot URL
@@ -84,8 +72,9 @@ const BookingForm = () => {
   useEffect(() => {
     if (hasAutoSearched && selectedDate) {
       handleSearchTicket();
+      setHasSearched(true);
     }
-  }, [hasAutoSearched, selectedDate]);
+  }, [hasAutoSearched, selectedDate, hasSearched]);
 
   const handleIncrement = () => setNumSelectPersonAdult((prev) => prev + 1);
   const handleDecrement = () => setNumSelectPersonAdult((prev) => (prev > 1 ? prev - 1 : 1));
@@ -102,8 +91,6 @@ const BookingForm = () => {
     dispatch(setFrom(selectedFrom));
     dispatch(setTo(selectedTo));
 
-    setIsLoading(true);
-
     const timeZone = 'Asia/Ho_Chi_Minh';
     const formattedDate = format(toZonedTime(selectedDate, timeZone), 'yyyy-MM-dd', { timeZone });
     const filteredSchedules = schedules.filter(schedule => {
@@ -112,13 +99,16 @@ const BookingForm = () => {
 
       const isMatchingRoute = route.from === selectedFrom && route.to === selectedTo;
       const scheduleDate = format(toZonedTime(schedule.departureTime, timeZone), 'yyyy-MM-dd', { timeZone });
-
+      const depTime = new Date(schedule.departureTime);
       return (
         isMatchingRoute &&
         scheduleDate === formattedDate &&
-        schedule.status === "upcoming"
+        schedule.status === "upcoming" &&
+        depTime >= now
       );
     });
+    console.log("filteredSchedules", filteredSchedules);
+
 
     navigate(`/search-results?from=${selectedFrom}&to=${selectedTo}&date=${selectedDate}`, {
       state: {
@@ -128,50 +118,9 @@ const BookingForm = () => {
         adults: numSelectAdult,
         children: numSelectChildren,
         results: filteredSchedules,
-        isLoading: isLoading
       },
     });
   };
-
-  useEffect(() => {
-    if (hasAutoSearched && selectedFrom && selectedTo && selectedDate) {
-      let retries = 0;
-      const maxRetries = 10;
-      setIsLoading(true);
-
-      const interval = setInterval(() => {
-        const timeZone = 'Asia/Ho_Chi_Minh';
-        const formattedDate = format(toZonedTime(selectedDate, timeZone), 'yyyy-MM-dd', { timeZone });
-        const combinedRoute = `${selectedFrom} - ${selectedTo}`;
-        const matchingRoutes = routes.filter(route => `${route.from} - ${route.to}` === combinedRoute);
-        const matchingRouteIds = matchingRoutes.map(route => route.id);
-
-        const filteredSchedules = schedules.filter(schedule => {
-          const scheduleDate = format(toZonedTime(schedule.departureTime, timeZone), 'yyyy-MM-dd', { timeZone });
-          return matchingRouteIds.includes(schedule.routeId) && scheduleDate === formattedDate && schedule.status === "upcoming";
-        });
-
-        if (filteredSchedules.length > 0 || retries >= maxRetries) {
-          clearInterval(interval);
-          setIsLoading(false);
-
-          if (filteredSchedules.length > 0) {
-            navigate(`/search-results?from=${selectedFrom}&to=${selectedTo}&date=${selectedDate}`, {
-              state: {
-                from: selectedFrom,
-                to: selectedTo,
-                date: selectedDate,
-                adults: numSelectAdult,
-                children: numSelectChildren,
-                results: filteredSchedules,
-              },
-            });
-          }
-        }
-        retries++;
-      }, 1000);
-    }
-  }, [hasAutoSearched, selectedDate, selectedFrom, selectedTo, routes, schedules]);
 
   useEffect(() => {
     const fetchAllCity = async () => {
@@ -181,33 +130,66 @@ const BookingForm = () => {
     fetchAllCity();
   }, []);
 
+  const customStyles = {
+    container: (base) => ({
+      ...base,
+      width: '100%',
+    }),
+    control: (base, state) => ({
+      ...base,
+      width: '100%',
+      minHeight: '42px',
+      borderRadius: '8px',
+      border: `1px solid ${state.isFocused ? '#007bff' : '#ddd'}`,
+      boxShadow: 'none',
+      fontSize: '16px',
+      '&:hover': {
+        borderColor: '#007bff',
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 9999,
+      borderRadius: '8px',
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isFocused ? '#f1f1f1' : 'white',
+      color: '#333',
+      padding: '10px',
+      cursor: 'pointer',
+    }),
+  };
+
   return (
     <>
       <DropdownSection>
         <div className="dropdown-group">
           {/* Dropdown chọn From (startPoint) */}
           <div className="dropdown valid">
-            <select value={selectedFrom} onChange={(e) => dispatch(setFrom(e.target.value))}>
-              <option value="">From</option>
-              {city.map((item) => (
-                <option key={item.code} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              styles={customStyles}
+              classNamePrefix="react-select"
+              options={city.map((item) => ({ value: item.name, label: item.name }))}
+              placeholder="From"
+              value={selectedFrom ? { value: selectedFrom, label: selectedFrom } : "From"}
+              onChange={(selectedOption) => dispatch(setFrom(selectedOption?.value))}
+              isClearable
+            />
           </div>
           <div className="arrow">
             <img src={mui_ten} alt="Arrow" />
           </div>
           <div className="dropdown success">
-            <select value={selectedTo} onChange={(e) => dispatch(setTo(e.target.value))}>
-              <option value="">To</option>
-              {city.map((item) => (
-                <option key={item.code} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              styles={customStyles}
+              classNamePrefix="react-select"
+              options={city.map((item) => ({ value: item.name, label: item.name }))}
+              placeholder="To"
+              value={selectedTo ? { value: selectedTo, label: selectedTo } : "To"}
+              onChange={(selectedOption) => dispatch(setTo(selectedOption?.value))}
+              isClearable
+            />
           </div>
           <div className="dropdown calendar">
             <div className="date-picker-wrapper">

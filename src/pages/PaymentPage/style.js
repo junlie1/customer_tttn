@@ -102,15 +102,17 @@ export const Note = styled.p`
 // Input chung
 export const Input = styled.input`
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid ${({ isValid }) => (isValid ? 'green' : '#ddd')};
   border-radius: 6px;
   transition: all 0.3s ease-in-out;
   font-size: 16px;
 
   &:focus {
     outline: none;
-    border-color: #ff5722;
-    box-shadow: 0px 0px 8px rgba(255, 87, 34, 0.5);
+    border-color: ${({ isValid }) => (isValid ? 'green' : '#ff5722')};
+    box-shadow: 0px 0px 8px
+      ${({ isValid }) =>
+    isValid ? 'rgba(0, 128, 0, 0.5)' : 'rgba(255, 87, 34, 0.5)'};
   }
 `;
 
